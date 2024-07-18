@@ -409,11 +409,11 @@ __global__  void update_seg_subset(
     int idx_cache = threadIdx.x/4;
     float beta = 0;
     //printf("(%d, %d) - %d, %d, %d \n", x,y , idx_cache,threadIdx.x );
-    const bool x_greater_than_1 = (x>1);
-    const bool y_greater_than_1 = (y>1);
+    const bool x_greater_than_0 = (x>0);
+    const bool y_greater_than_0 = (y>0);
     const bool x_smaller_than_xdim_minus_1 = x<(xdim-1);
     const bool y_smaller_than_ydim_minus_1 = y<(ydim-1);
-    if ((!x_greater_than_1)||(!y_greater_than_1)||(!x_smaller_than_xdim_minus_1)||(!y_smaller_than_ydim_minus_1)) return;
+    if ((!x_greater_than_0)||(!y_greater_than_0)||(!x_smaller_than_xdim_minus_1)||(!y_smaller_than_ydim_minus_1)) return;
     
     __shared__ int N_shared[THREADS_PER_BLOCK/4];
     __shared__ int S_shared[THREADS_PER_BLOCK/4];
@@ -610,11 +610,11 @@ __global__  void update_seg_subset(
 
     //float beta = 4;
     //printf("(%d, %d) - %d, %d, %d \n", x,y , idx_cache,threadIdx.x );
-    const bool x_greater_than_1 = (x>1);
-    const bool y_greater_than_1 = (y>1);
+    const bool x_greater_than_0 = (x>0);
+    const bool y_greater_than_0 = (y>0);
     const bool x_smaller_than_xdim_minus_1 = x<(xdim-1);
     const bool y_smaller_than_ydim_minus_1 = y<(ydim-1);
-    if ((!x_greater_than_1)||(!y_greater_than_1)||(!x_smaller_than_xdim_minus_1)||(!y_smaller_than_ydim_minus_1)) return;
+    if ((!x_greater_than_0)||(!y_greater_than_0)||(!x_smaller_than_xdim_minus_1)||(!y_smaller_than_ydim_minus_1)) return;
    
    /*if(sp_params[ seg[seg_idx]].count==1) 
     {
@@ -763,11 +763,11 @@ __global__  void update_seg_subset(
     int idx_cache = threadIdx.x/4;
     float beta = 0;
     //printf("(%d, %d) - %d, %d, %d \n", x,y , idx_cache,threadIdx.x );
-    const bool x_greater_than_1 = (x>1);
-    const bool y_greater_than_1 = (y>1);
+    const bool x_greater_than_0 = (x>0);
+    const bool y_greater_than_0 = (y>0);
     const bool x_smaller_than_xdim_minus_1 = x<(xdim-1);
     const bool y_smaller_than_ydim_minus_1 = y<(ydim-1);
-    if ((!x_greater_than_1)||(!y_greater_than_1)||(!x_smaller_than_xdim_minus_1)||(!y_smaller_than_ydim_minus_1)) return;
+    if ((!x_greater_than_0)||(!y_greater_than_0)||(!x_smaller_than_xdim_minus_1)||(!y_smaller_than_ydim_minus_1)) return;
     
     __shared__ int N_shared[THREADS_PER_BLOCK/4];
     __shared__ int S_shared[THREADS_PER_BLOCK/4];
