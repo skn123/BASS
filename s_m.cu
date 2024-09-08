@@ -126,7 +126,7 @@ __host__ int CudaCalcSplitCandidate(const float* image_gpu_double, int* split_me
 		cudaMemset(mutex_2, 0, sizeof(int));
         cudaMemcpy(&done, mutex_2, sizeof(int), cudaMemcpyDeviceToHost);
 
-        calc_split_candidate<<<BlockPerGrid,ThreadPerBlock>>>(seg_split1,border,distance, mutex_2, nPixels, xdim, ydim); 
+        calc_split_candidate<<<BlockPerGrid,ThreadPerBlock>>>(seg_split1,seg,border,distance, mutex_2, nPixels, xdim, ydim); 
         distance++;
         cudaMemcpy(&done, mutex_2, sizeof(int), cudaMemcpyDeviceToHost);
 
@@ -138,7 +138,7 @@ __host__ int CudaCalcSplitCandidate(const float* image_gpu_double, int* split_me
     {
 		cudaMemset(mutex_2, 0, sizeof(int));
         cudaMemcpy(&done, mutex_2, sizeof(int), cudaMemcpyDeviceToHost);
-        calc_split_candidate<<<BlockPerGrid,ThreadPerBlock>>>(seg_split2 ,border,distance, mutex_2, nPixels, xdim, ydim); 
+        calc_split_candidate<<<BlockPerGrid,ThreadPerBlock>>>(seg_split2,seg,border,distance, mutex_2, nPixels, xdim, ydim); 
         distance++;
         cudaMemcpy(&done, mutex_2, sizeof(int), cudaMemcpyDeviceToHost);
     }
@@ -205,7 +205,7 @@ __global__  void calc_merge_candidate(int* seg, bool* border, int* split_merge_p
             {
                 if ((y>1) && (y< ydim-2))
                 {
-                    W = __ldg(&seg[idx+ydim]);  // left
+                    W = __ldg(&seg[idx+xdim]);  // down
                 }
             }
 
@@ -230,54 +230,102 @@ __global__  void calc_merge_candidate(int* seg, bool* border, int* split_merge_p
     return;        
 }
 
-__global__  void calc_split_candidate(int* seg, bool* border,int distance, int* mutex, const int nPixels, const int xdim, const int ydim){   
+__global__  void calc_split_candidate(int* dists, int* seg, bool* border,int distance, int* mutex, const int nPixels, const int xdim, const int ydim){   
     int idx = threadIdx.x + blockIdx.x * blockDim.x;  
     
     if (idx>=nPixels) return; 
-    if(border[idx]) return; 
+    // if(border[idx]) return; 
     int x = idx % xdim;
     int y = idx / xdim;
 
-    int C = seg[idx]; // center 
+    int distC = dists[idx]; // center 
+    int segC = seg[idx]; // center seg
 
-    if(C!=distance) return;
+    if(distC!=distance) return;
 
     if ((y>0)&&(idx-xdim>=0)){
-        if(!seg[idx-xdim])
+        if((!dists[idx-xdim]) and (seg[idx-xdim] == segC))
         {
-            seg[idx-xdim] = distance +1 ;
+            dists[idx-xdim] = distance +1 ;
             mutex[0] = 1;
         }
     }          
     if ((x>0)&&(idx-1>=0)){
 
-        if(!seg[idx-1])
+        if((!dists[idx-1]) and (seg[idx-1] == segC))
         {
-            seg[idx-1] = distance +1 ;
+            dists[idx-1] = distance +1 ;
             mutex[0] = 1;
         }
     }
     if ((y<ydim-1)&&(idx+xdim<nPixels)){
 
-        if(!seg[idx+xdim])
+        if((!dists[idx+xdim]) and (seg[idx+xdim] == segC))
         {
-            seg[idx+xdim] = distance +1 ;
+            dists[idx+xdim] = distance +1 ;
             mutex[0] = 1;
         }
     }   
     if ((x<xdim-1)&&(idx+1<nPixels)){
         
-        if(!seg[idx+1])
+      if((!dists[idx+1]) and (seg[idx+1] == segC))
         {
-            seg[idx+1] = distance +1 ;
+            dists[idx+1] = distance +1 ;
             mutex[0] = 1;
         }
 
-    }       
-
+    }      
     
     return;        
 }
+
+// __global__  void calc_split_candidate(int* seg, bool* border,int distance, int* mutex, const int nPixels, const int xdim, const int ydim){   
+//     int idx = threadIdx.x + blockIdx.x * blockDim.x;  
+    
+//     if (idx>=nPixels) return; 
+//     if(border[idx]) return; 
+//     int x = idx % xdim;
+//     int y = idx / xdim;
+
+//     int C = seg[idx]; // center 
+
+//     if(C!=distance) return;
+
+//     if ((y>0)&&(idx-xdim>=0)){
+//         if(!seg[idx-xdim])
+//         {
+//             seg[idx-xdim] = distance +1 ;
+//             mutex[0] = 1;
+//         }
+//     }          
+//     if ((x>0)&&(idx-1>=0)){
+
+//         if(!seg[idx-1])
+//         {
+//             seg[idx-1] = distance +1 ;
+//             mutex[0] = 1;
+//         }
+//     }
+//     if ((y<ydim-1)&&(idx+xdim<nPixels)){
+
+//         if(!seg[idx+xdim])
+//         {
+//             seg[idx+xdim] = distance +1 ;
+//             mutex[0] = 1;
+//         }
+//     }   
+//     if ((x<xdim-1)&&(idx+1<nPixels)){
+        
+//         if(!seg[idx+1])
+//         {
+//             seg[idx+1] = distance +1 ;
+//             mutex[0] = 1;
+//         }
+
+//     }       
+
+//     return;        
+// }
 
 
 __global__ void init_split(const bool* border, int* seg_gpu, superpixel_params* sp_params, superpixel_GPU_helper_sm* sp_gpu_helper_sm, const int nsuperpixel_buffer, const int xdim, const int ydim, const int offset, const int* seg, int* max_sp, int max_SP) {
@@ -745,6 +793,7 @@ __global__ void calc_hasting_ratio2(const float* image_gpu_double,int* split_mer
     {
             //printf("Want to merge k: %d, f: %d, splitmerge k %d, splitmerge  f %d, %d\n", k, f, split_merge_pairs[2*k], split_merge_pairs[2*f], split_merge_pairs[2*f+1] );
             if( k > atomicMax(&split_merge_pairs[2*f],k))
+            // if( atomicMax(&split_merge_pairs[2*f],k)==0 ) // only first?
             {
                 //printf("Merge: %f \n",sp_gpu_helper_sm[k].hasting );
 
