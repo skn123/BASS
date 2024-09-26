@@ -1,4 +1,6 @@
 #pragma once 
+#include <thrust/system_error.h>
+#include <thrust/system/cuda/error.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>

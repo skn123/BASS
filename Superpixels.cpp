@@ -5,8 +5,8 @@
 #include "utils.h"
 
 //#include <ppl.h>
-#include <thrust/system_error.h>
-#include <thrust/system/cuda/error.h>
+//#include <thrust/system_error.h>
+//#include <thrust/system/cuda/error.h>
 #include <iostream>
 #include <fstream>
 
